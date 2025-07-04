@@ -28,7 +28,7 @@ const Signup: React.FC = () => {
     }
     setLoading(true);
     try {
-      const res = await authApi.signup({ name, email, password });
+      const res = await authApi.signup({ username: name, email, password });
       if (res.token) {
         localStorage.setItem('token', res.token);
         navigate('/');

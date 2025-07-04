@@ -6,6 +6,7 @@ const Login: React.FC = () => {
   const [emailOrUsername, setEmailOrUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ emailOrUsername?: string; password?: string }>({});
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     let errors: { emailOrUsername?: string; password?: string } = {};
     if (!emailOrUsername) errors.emailOrUsername = 'Username or Email is required.';
     if (!password) errors.password = 'Password is required.';
@@ -23,7 +25,8 @@ const Login: React.FC = () => {
       const res = await authApi.login({ email: emailOrUsername, password });
       if (res.token) {
         localStorage.setItem('token', res.token);
-        navigate('/');
+        setSuccess('Login successful!');
+        setTimeout(() => navigate('/'), 1000);
       } else {
         setError(res.message || 'Login failed.');
       }
@@ -66,6 +69,7 @@ const Login: React.FC = () => {
             )}
           </div>
           {error && <div className="text-red-500 text-sm text-center">{error}</div>}
+          {success && <div className="text-green-600 text-sm text-center">{success}</div>}
           <button
             type="submit"
             className="w-full py-2 px-4 bg-green-600 text-black rounded hover:bg-green-700 focus:outline-none"
