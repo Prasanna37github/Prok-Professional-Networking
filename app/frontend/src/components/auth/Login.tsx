@@ -26,7 +26,7 @@ const Login: React.FC = () => {
       if (res.token) {
         localStorage.setItem('token', res.token);
         setSuccess('Login successful!');
-        setTimeout(() => navigate('/'), 1000);
+        setTimeout(() => navigate('/profile'), 1000);
       } else {
         setError(res.message || 'Login failed.');
       }

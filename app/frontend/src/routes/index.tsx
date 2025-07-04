@@ -8,6 +8,7 @@ import PostList from '../components/posts/PostList';
 import Feed from '../components/feed/Feed';
 import JobList from '../components/job-board/JobList';
 import MessageList from '../components/messaging/MessageList';
+import ProfilePage from '../pages/ProfilePage';
 
 export const router = createBrowserRouter([
   {
@@ -46,4 +47,8 @@ export const router = createBrowserRouter([
     path: '/messages',
     element: <MessageList />,
   },
-]); 
+  {
+    path: '/profile',
+    element: <ProfilePage />,
+  },
+]);
