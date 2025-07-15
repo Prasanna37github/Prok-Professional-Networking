@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import ProfileHeader from '../components/profile/ProfileHeader';
 import ProfileBio from '../components/profile/ProfileBio';
 import ProfileSkills from '../components/profile/ProfileSkills';
@@ -97,13 +97,19 @@ const ProfilePage: React.FC = () => {
       )}
       
       {!editing && (
-        <div className="mt-6 text-center">
+        <div className="mt-6 text-center space-x-4">
           <button
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
             onClick={() => setEditing(true)}
           >
             Edit Profile
           </button>
+          <Link
+            to="/posts/create"
+            className="inline-block px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
+          >
+            Create Post
+          </Link>
         </div>
       )}
     </div>

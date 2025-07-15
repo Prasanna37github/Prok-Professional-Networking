@@ -10,7 +10,7 @@ from db import db
 from models.user_model import User
 
 profile_bp = Blueprint('profile', __name__)
-
+ 
 # Configuration for file uploads
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB

@@ -1,8 +1,19 @@
 export interface User {
   id: number;
+  username: string;
   email: string;
-  name: string;
-  created_at: string;
+  name?: string;
+  title?: string;
+  location?: string;
+  bio?: string;
+  avatar?: string;
+  phone?: string;
+  socials?: any[];
+  skills?: any[];
+  experience?: any[];
+  education?: any[];
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Profile {
@@ -36,8 +47,15 @@ export interface Education {
 export interface Post {
   id: number;
   user_id: number;
+  title: string;
   content: string;
+  media_url?: string;
+  media_type?: string;
+  allow_comments: boolean;
+  is_public: boolean;
   created_at: string;
+  updated_at?: string;
+  user?: User;
   likes: number;
   comments: Comment[];
 }
