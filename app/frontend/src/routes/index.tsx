@@ -1,8 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom';
 import Login from '../components/auth/Login';
 import Signup from '../components/auth/Signup';
-import ProfileView from '../components/profile/ProfileView';
-import ProfileEdit from '../components/profile/ProfileEdit';
 import PostCreate from '../components/posts/PostCreate';
 import PostList from '../components/posts/PostList';
 import Feed from '../components/feed/Feed';
@@ -25,11 +23,7 @@ export const router = createBrowserRouter([
   },
   {
     path: '/profile',
-    element: <ProfileView />,
-  },
-  {
-    path: '/profile/edit',
-    element: <ProfileEdit />,
+    element: <ProfilePage />,
   },
   {
     path: '/posts/create',
@@ -40,15 +34,15 @@ export const router = createBrowserRouter([
     element: <PostList />,
   },
   {
+    path: '/feed',
+    element: <Feed />,
+  },
+  {
     path: '/jobs',
     element: <JobList />,
   },
   {
     path: '/messages',
     element: <MessageList />,
-  },
-  {
-    path: '/profile',
-    element: <ProfilePage />,
   },
 ]);

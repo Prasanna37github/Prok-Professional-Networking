@@ -25,6 +25,10 @@ const Login: React.FC = () => {
       const res = await authApi.login({ email: emailOrUsername, password });
       if (res.token) {
         localStorage.setItem('token', res.token);
+        // Store username for profile fetch
+        if (res.user && res.user.username) {
+          localStorage.setItem('username', res.user.username);
+        }
         setSuccess('Login successful!');
         setTimeout(() => navigate('/profile'), 1000);
       } else {

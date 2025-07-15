@@ -4,6 +4,8 @@ from config import Config
 from dotenv import load_dotenv
 from db import db
 from flask_jwt_extended import JWTManager
+import os
+import sys
 
 # Load environment variables
 load_dotenv()
@@ -18,11 +20,14 @@ db.init_app(app)
 jwt = JWTManager(app)
 
 # Import models (after db.init_app)
-from models.user import User
+from models.user_model import User
 
 # Register blueprints
 from api.auth import auth_bp
+from api.profile import profile_bp
+
 app.register_blueprint(auth_bp)
+app.register_blueprint(profile_bp)
 
 def setup_database():
     """Setup database tables"""
@@ -39,5 +44,16 @@ if __name__ == '__main__':
     # Setup database tables
     setup_database()
     
+    # Determine port
+    port = 5000
+    # Check for environment variable
+    if os.environ.get('PORT'):
+        port = int(os.environ['PORT'])
+    # Check for command line argument
+    elif len(sys.argv) > 1:
+        try:
+            port = int(sys.argv[1])
+        except Exception:
+            pass
     # Run the app
-    app.run(debug=True)
+    app.run(debug=True, port=port)

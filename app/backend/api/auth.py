@@ -1,8 +1,9 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from sqlalchemy.exc import IntegrityError
 from db import db
-from models.user import User
+from werkzeug.security import generate_password_hash, check_password_hash
+from models.user_model import User
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -14,7 +15,20 @@ def signup():
     password = data.get('password')
     if not username or not email or not password:
         return jsonify({'message': 'Missing fields'}), 400
-    user = User(username=username, email=email)
+    # Add default profile fields
+    user = User(
+        username=username,
+        email=email,
+        name='',
+        title='',
+        location='',
+        bio='',
+        phone='',
+        socials='[]',
+        skills='[]',
+        experience='[]',
+        education='[]'
+    )
     user.set_password(password)
     try:
         db.session.add(user)
@@ -33,6 +47,7 @@ def login():
         (User.username == username_or_email) | (User.email == username_or_email)
     ).first()
     if user and user.check_password(password):
-        token = create_access_token(identity=user.id)
+        # Convert user ID to string for JWT
+        token = create_access_token(identity=str(user.id))
         return jsonify({'token': token, 'user': {'id': user.id, 'username': user.username, 'email': user.email}})
     return jsonify({'message': 'Invalid credentials'}), 401
