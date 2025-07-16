@@ -485,6 +485,13 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({ user, onSave, onCance
         >
           Cancel
         </button>
+        <button
+          type="button"
+          onClick={() => window.location.href = '/dashboard'}
+          className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
+        >
+          Go to Dashboard
+        </button>
       </div>
     </form>
   );

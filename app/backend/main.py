@@ -23,15 +23,18 @@ jwt = JWTManager(app)
 from models.user_model import User
 from models.post import Post
 from models.like import Like
+from models.comment import Comment
 
 # Register blueprints
 from api.auth import auth_bp
 from api.profile import profile_bp
 from api.posts import posts_bp
+from api.comments import comments_bp
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(profile_bp)
 app.register_blueprint(posts_bp)
+app.register_blueprint(comments_bp)
 
 def setup_database():
     """Setup database tables"""

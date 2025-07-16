@@ -98,6 +98,12 @@ const ProfilePage: React.FC = () => {
       
       {!editing && (
         <div className="mt-6 text-center space-x-4">
+          <Link
+            to="/dashboard"
+            className="inline-block px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+          >
+            Go to Dashboard
+          </Link>
           <button
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
             onClick={() => setEditing(true)}

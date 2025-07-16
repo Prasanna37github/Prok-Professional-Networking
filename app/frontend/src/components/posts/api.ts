@@ -20,6 +20,7 @@ export interface Post {
   created_at: string;
   updated_at: string;
   like_count: number;
+  comment_count: number;
   user: {
     id: number;
     username: string;
@@ -27,6 +28,12 @@ export interface Post {
     avatar?: string;
     profile?: any;
   };
+}
+
+export interface PostsFilters {
+  search?: string;
+  sort_by?: 'newest' | 'oldest' | 'most_liked' | 'most_commented';
+  filter_by?: 'all' | 'public' | 'private';
 }
 
 export const postsApi = {
@@ -57,7 +64,11 @@ export const postsApi = {
     return response.json();
   },
 
-  getPosts: async (page: number = 1, perPage: number = 10): Promise<{
+  getPosts: async (
+    page: number = 1, 
+    perPage: number = 10, 
+    filters?: PostsFilters
+  ): Promise<{
     posts: Post[];
     total: number;
     pages: number;
@@ -65,7 +76,22 @@ export const postsApi = {
     has_next: boolean;
     has_prev: boolean;
   }> => {
-    const response = await fetch(`${API_URL}/api/posts/?page=${page}&per_page=${perPage}`, {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      per_page: perPage.toString(),
+    });
+
+    if (filters?.search) {
+      params.append('search', filters.search);
+    }
+    if (filters?.sort_by) {
+      params.append('sort_by', filters.sort_by);
+    }
+    if (filters?.filter_by) {
+      params.append('filter_by', filters.filter_by);
+    }
+
+    const response = await fetch(`${API_URL}/api/posts/?${params.toString()}`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
       },

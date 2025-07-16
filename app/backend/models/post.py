@@ -33,6 +33,7 @@ class Post(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'like_count': len(self.likes),
+            'comment_count': len(self.comments),
             'user': {
                 'id': self.user.id,
                 'username': self.user.username,

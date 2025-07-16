@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { postsApi } from './posts/api';
 import { profileApi } from './profile/api';
+import { commentsApi } from './comments/api';
 import { useTheme } from '../context/ThemeContext';
-import type { Post } from './posts/api';
+import { useDebounce } from '../hooks/useDebounce';
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
+import PostFilters from './posts/PostFilters';
+import type { Post, PostsFilters } from './posts/api';
 import type { User } from '../types';
+import type { Comment } from './comments/api';
 
 const Dashboard: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -16,12 +21,39 @@ const Dashboard: React.FC = () => {
   const [hasPrev, setHasPrev] = useState(false);
   const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
   const [commentInputs, setCommentInputs] = useState<{ [key: number]: string }>({});
+  const [comments, setComments] = useState<{ [key: number]: Comment[] }>({});
+  const [showComments, setShowComments] = useState<Set<number>>(new Set());
   const [showShareModal, setShowShareModal] = useState<number | null>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  
+  // Search and filter state
+  const [searchValue, setSearchValue] = useState('');
+  const [filters, setFilters] = useState<PostsFilters>({});
+  const debouncedSearch = useDebounce(searchValue, 500);
+  
   const { isDarkMode, toggleTheme } = useTheme();
+  const navigate = useNavigate();
+
+  // Infinite scroll hook
+  const loadingRef = useInfiniteScroll({
+    hasNext,
+    isLoading: loading,
+    onLoadMore: () => setCurrentPage(prev => prev + 1)
+  });
 
   useEffect(() => {
     fetchUserProfile();
+  }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
     fetchPosts();
+  }, [debouncedSearch, filters]);
+
+  useEffect(() => {
+    if (currentPage > 1) {
+      fetchPosts(true); // Append mode
+    }
   }, [currentPage]);
 
   useEffect(() => {
@@ -46,6 +78,21 @@ const Dashboard: React.FC = () => {
     }
   }, [posts]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.dropdown-container')) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   const fetchUserProfile = async () => {
     try {
       const username = localStorage.getItem('username');
@@ -66,11 +113,22 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const fetchPosts = async () => {
+  const fetchPosts = async (append: boolean = false) => {
     try {
       setLoading(true);
-      const response = await postsApi.getPosts(currentPage, 10);
-      setPosts(response.posts);
+      const searchFilters = { ...filters };
+      if (debouncedSearch) {
+        searchFilters.search = debouncedSearch;
+      }
+      
+      const response = await postsApi.getPosts(currentPage, 10, searchFilters);
+      
+      if (append) {
+        setPosts(prev => [...prev, ...response.posts]);
+      } else {
+        setPosts(response.posts);
+      }
+      
       setHasNext(response.has_next);
       setHasPrev(response.has_prev);
       setError(null);
@@ -79,6 +137,20 @@ const Dashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearch = (search: string) => {
+    setSearchValue(search);
+  };
+
+  const handleFiltersChange = (newFilters: PostsFilters) => {
+    setFilters(newFilters);
+  };
+
+  const handleSignout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
+    navigate('/login');
   };
 
   const formatDate = (dateString: string) => {
@@ -160,12 +232,78 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleComment = (postId: number) => {
-    // Enable comment input for this post
-    setCommentInputs(prev => ({
-      ...prev,
-      [postId]: prev[postId] || ''
-    }));
+  const handleComment = async (postId: number) => {
+    // Toggle comment section for this post
+    setShowComments(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(postId)) {
+        newSet.delete(postId);
+        // Close comment input when hiding comments
+        setCommentInputs(prevInputs => {
+          const newInputs = { ...prevInputs };
+          delete newInputs[postId];
+          return newInputs;
+        });
+      } else {
+        newSet.add(postId);
+        // Load comments if not already loaded
+        if (!comments[postId]) {
+          loadComments(postId);
+        }
+        // Enable comment input for this post
+        setCommentInputs(prev => ({
+          ...prev,
+          [postId]: ''
+        }));
+      }
+      return newSet;
+    });
+  };
+
+  const loadComments = async (postId: number) => {
+    try {
+      const response = await commentsApi.getComments(postId);
+      if (response.success && response.comments) {
+        setComments(prev => ({
+          ...prev,
+          [postId]: response.comments || []
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading comments:', error);
+    }
+  };
+
+  const handleSubmitComment = async (postId: number) => {
+    const content = commentInputs[postId]?.trim();
+    if (!content) return;
+
+    try {
+      const response = await commentsApi.createComment(postId, content);
+      if (response.success && response.comment) {
+        // Add new comment to the list
+        setComments(prev => ({
+          ...prev,
+          [postId]: [response.comment!, ...(prev[postId] || [])]
+        }));
+        
+        // Update post comment count
+        setPosts(prev => prev.map(post => 
+          post.id === postId 
+            ? { ...post, comment_count: (post.comment_count || 0) + 1 }
+            : post
+        ));
+        
+        // Clear the input and close it
+        setCommentInputs(prev => {
+          const newInputs = { ...prev };
+          delete newInputs[postId];
+          return newInputs;
+        });
+      }
+    } catch (error) {
+      console.error('Error submitting comment:', error);
+    }
   };
 
   const handleShare = (postId: number) => {
@@ -215,7 +353,7 @@ const Dashboard: React.FC = () => {
               <div className="relative">
                 {user?.avatar ? (
                   <img 
-                    src={`http://localhost:5000${user.avatar}`}
+                    src={`http://localhost:5000/api/profile/image/${user.avatar}`}
                     alt={user?.name || user?.username}
                     className="w-16 h-16 rounded-full object-cover border-4 border-white shadow-lg"
                   />
@@ -269,40 +407,98 @@ const Dashboard: React.FC = () => {
                 )}
               </button>
 
-              <Link
-                to="/profile"
-                className={`px-6 py-3 rounded-lg transition-colors font-medium flex items-center ${
-                  isDarkMode 
-                    ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                Edit Profile
-              </Link>
-              <Link
-                to="/posts/create"
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center shadow-lg"
-              >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Create Post
-              </Link>
+              {/* Dropdown Menu */}
+              <div className="dropdown-container relative">
+                <button
+                  onClick={() => setShowDropdown(!showDropdown)}
+                  className={`p-3 rounded-lg transition-colors ${
+                    isDarkMode 
+                      ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' 
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                  title="Menu"
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                  </svg>
+                </button>
+
+                {/* Dropdown Menu */}
+                <div className={`absolute right-0 top-full mt-2 w-48 rounded-lg shadow-lg transform transition-all duration-200 ease-in-out ${
+                  showDropdown 
+                    ? 'translate-x-0 opacity-100 scale-100' 
+                    : 'translate-x-4 opacity-0 scale-95 pointer-events-none'
+                } ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
+                  <div className="py-1">
+                    <Link
+                      to="/profile"
+                      onClick={() => setShowDropdown(false)}
+                      className={`flex items-center px-4 py-3 text-sm transition-colors ${
+                        isDarkMode 
+                          ? 'text-gray-200 hover:bg-gray-700' 
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      Edit Profile
+                    </Link>
+                    <Link
+                      to="/posts/create"
+                      onClick={() => setShowDropdown(false)}
+                      className={`flex items-center px-4 py-3 text-sm transition-colors ${
+                        isDarkMode 
+                          ? 'text-gray-200 hover:bg-gray-700' 
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      Create Post
+                    </Link>
+                    <div className={`border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'} my-1`}></div>
+                    <button
+                      onClick={() => {
+                        setShowDropdown(false);
+                        handleSignout();
+                      }}
+                      className={`flex items-center w-full px-4 py-3 text-sm transition-colors ${
+                        isDarkMode 
+                          ? 'text-red-400 hover:bg-gray-700' 
+                          : 'text-red-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      </svg>
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content - Posts Feed */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      {/* Main Content - Combined Feed and Dashboard */}
+      <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Section Header */}
         <div className="mb-8">
-          <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-2`}>Your Feed</h2>
+          <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-2`}>Your Professional Feed</h2>
           <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>Stay connected with your professional network</p>
         </div>
+
+        {/* Search and Filter Section */}
+        <PostFilters
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          onSearch={handleSearch}
+          searchValue={searchValue}
+          onSearchChange={setSearchValue}
+        />
 
         {/* Posts List */}
         <div className="space-y-6">
@@ -319,17 +515,24 @@ const Dashboard: React.FC = () => {
                 <svg className={`w-16 h-16 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'} mx-auto mb-4`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                <h3 className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-2`}>No posts yet</h3>
-                <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mb-4`}>Be the first to create a post and start sharing!</p>
-                <Link
-                  to="/posts/create"
-                  className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  Create Your First Post
-                </Link>
+                <h3 className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-2`}>No posts found</h3>
+                <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mb-4`}>
+                  {debouncedSearch || Object.keys(filters).length > 0 
+                    ? 'Try adjusting your search or filters.' 
+                    : 'Be the first to create a post and start sharing!'
+                  }
+                </p>
+                {!debouncedSearch && Object.keys(filters).length === 0 && (
+                  <Link
+                    to="/posts/create"
+                    className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Create Your First Post
+                  </Link>
+                )}
               </div>
             </div>
           ) : (
@@ -342,7 +545,7 @@ const Dashboard: React.FC = () => {
                       {/* User Profile Image */}
                       {post.user?.avatar ? (
                         <img 
-                          src={`http://localhost:5000${post.user.avatar}`}
+                          src={`http://localhost:5000/api/profile/image/${post.user.avatar}`}
                           alt={post.user?.name || post.user?.username}
                           className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
                         />
@@ -434,7 +637,7 @@ const Dashboard: React.FC = () => {
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                         </svg>
-                        <span>Comment</span>
+                        <span>{post.comment_count || 0}</span>
                       </button>
                     )}
                     <button 
@@ -469,9 +672,65 @@ const Dashboard: React.FC = () => {
                         }`}
                         rows={2}
                       />
-                      <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                      <button 
+                        onClick={() => handleSubmitComment(post.id)}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
                         Post
                       </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Comments Display Section */}
+                {showComments.has(post.id) && (
+                  <div className={`px-6 pb-6 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                    <div className="mt-4">
+                      <h4 className={`text-sm font-medium mb-3 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        Comments ({comments[post.id]?.length || 0})
+                      </h4>
+                      
+                      {comments[post.id] && comments[post.id].length > 0 ? (
+                        <div className="space-y-3">
+                          {comments[post.id].map((comment) => (
+                            <div key={comment.id} className={`p-3 rounded-lg ${
+                              isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
+                            }`}>
+                              <div className="flex items-start space-x-2">
+                                {comment.user.avatar ? (
+                                  <img 
+                                    src={`http://localhost:5000/api/profile/image/${comment.user.avatar}`}
+                                    alt={comment.user.name}
+                                    className="w-8 h-8 rounded-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                                    {comment.user.name?.charAt(0).toUpperCase() || comment.user.username?.charAt(0).toUpperCase() || 'U'}
+                                  </div>
+                                )}
+                                
+                                <div className="flex-1">
+                                  <div className="flex items-center space-x-2 mb-1">
+                                    <span className={`font-medium text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                      {comment.user.name || comment.user.username}
+                                    </span>
+                                    <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                      {formatDate(comment.created_at)}
+                                    </span>
+                                  </div>
+                                  <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                    {comment.content}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} text-center py-4`}>
+                          No comments yet. Be the first to comment!
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
@@ -479,32 +738,20 @@ const Dashboard: React.FC = () => {
             ))
           )}
 
-          {/* Pagination */}
-          {(hasNext || hasPrev) && (
-            <div className="flex items-center justify-center space-x-4 mt-8">
-              <button
-                onClick={() => setCurrentPage(currentPage - 1)}
-                disabled={!hasPrev}
-                className={`px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                  isDarkMode 
-                    ? 'bg-gray-700 border-gray-600 text-gray-200 hover:bg-gray-600' 
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                } border`}
-              >
-                Previous
-              </button>
-              <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>Page {currentPage}</span>
-              <button
-                onClick={() => setCurrentPage(currentPage + 1)}
-                disabled={!hasNext}
-                className={`px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                  isDarkMode 
-                    ? 'bg-gray-700 border-gray-600 text-gray-200 hover:bg-gray-600' 
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                } border`}
-              >
-                Next
-              </button>
+          {/* Loading indicator for infinite scroll */}
+          {loading && posts.length > 0 && (
+            <div ref={loadingRef} className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-8`}>
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <span className={`ml-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Loading more posts...</span>
+              </div>
+            </div>
+          )}
+
+          {/* Pagination (fallback for non-infinite scroll) */}
+          {!hasNext && !hasPrev && posts.length > 0 && (
+            <div className="text-center py-4">
+              <p className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>No more posts to load</p>
             </div>
           )}
         </div>
@@ -548,7 +795,9 @@ const Dashboard: React.FC = () => {
                     navigator.clipboard.writeText(getShareLink(showShareModal));
                     // You could add a toast notification here
                   }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-r-lg hover:bg-blue-700 transition-colors"
+                  className={`px-4 py-2 bg-blue-600 text-white rounded-r-lg hover:bg-blue-700 transition-colors ${
+                    isDarkMode ? 'border-gray-600' : 'border-gray-300'
+                  } border-l-0`}
                 >
                   Copy
                 </button>
@@ -560,7 +809,7 @@ const Dashboard: React.FC = () => {
                 onClick={() => setShowShareModal(null)}
                 className={`px-4 py-2 rounded-lg transition-colors ${
                   isDarkMode 
-                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                    ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' 
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >

@@ -131,15 +131,49 @@ def create_post():
 @posts_bp.route('/api/posts/', methods=['GET'])
 @jwt_required()
 def get_posts():
-    """Get all posts (with pagination)"""
+    """Get all posts (with pagination, search, and filtering)"""
     try:
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 10, type=int)
+        search = request.args.get('search', '').strip()
+        sort_by = request.args.get('sort_by', 'newest')  # newest, oldest, most_liked, most_commented
+        filter_by = request.args.get('filter_by', 'all')  # all, public, private
         
-        # Get posts with user information
-        posts = Post.query.filter_by(is_public=True)\
-                         .order_by(Post.created_at.desc())\
-                         .paginate(page=page, per_page=per_page, error_out=False)
+        # Build query
+        query = Post.query
+        
+        # Apply search filter
+        if search:
+            search_term = f"%{search}%"
+            query = query.join(User).filter(
+                db.or_(
+                    Post.title.ilike(search_term),
+                    Post.content.ilike(search_term),
+                    User.name.ilike(search_term),
+                    User.username.ilike(search_term)
+                )
+            )
+        
+        # Apply visibility filter
+        if filter_by == 'public':
+            query = query.filter_by(is_public=True)
+        elif filter_by == 'private':
+            query = query.filter_by(is_public=False)
+        # 'all' shows all posts (no filter)
+        
+        # Apply sorting
+        if sort_by == 'oldest':
+            query = query.order_by(Post.created_at.asc())
+        elif sort_by == 'most_liked':
+            query = query.outerjoin(Like).group_by(Post.id).order_by(db.func.count(Like.id).desc())
+        elif sort_by == 'most_commented':
+            from models.comment import Comment
+            query = query.outerjoin(Comment).group_by(Post.id).order_by(db.func.count(Comment.id).desc())
+        else:  # newest (default)
+            query = query.order_by(Post.created_at.desc())
+        
+        # Get posts with pagination
+        posts = query.paginate(page=page, per_page=per_page, error_out=False)
         
         return jsonify({
             'posts': [post.to_dict() for post in posts.items],

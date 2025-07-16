@@ -4,7 +4,6 @@ import Signup from '../components/auth/Signup';
 import Dashboard from '../components/Dashboard';
 import PostCreate from '../components/posts/PostCreate';
 import PostList from '../components/posts/PostList';
-import Feed from '../components/feed/Feed';
 import JobList from '../components/job-board/JobList';
 import MessageList from '../components/messaging/MessageList';
 import ProfilePage from '../pages/ProfilePage';
@@ -63,14 +62,7 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
-  {
-    path: '/feed',
-    element: (
-      <ProtectedRoute>
-        <Feed />
-      </ProtectedRoute>
-    ),
-  },
+
   {
     path: '/jobs',
     element: (
