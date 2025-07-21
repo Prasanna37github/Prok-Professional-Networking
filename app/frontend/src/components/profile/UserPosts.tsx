@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import { useAuth } from '../../context/AuthContext';
+
 import { postsApi } from '../posts/api';
 import type { Post } from '../posts/api';
 

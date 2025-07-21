@@ -59,8 +59,7 @@ const ProfilePage: React.FC = () => {
   if (error) return <div className="text-center p-8 text-red-600">Error: {error}</div>;
   if (!user) return <div className="text-center p-8 text-red-600">Profile not found.</div>;
 
-  // Ensure all arrays exist and are arrays
-  const safeSkills = Array.isArray(user.skills) ? user.skills : [];
+  
 
 
   return (

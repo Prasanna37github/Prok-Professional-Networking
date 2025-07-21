@@ -50,7 +50,7 @@ const ProfileView: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Simple validation
-    if (!form.name || !form.email) {
+    if (!form.name || !form.contact?.email) {
       setError('Name and Email are required.');
       return;
     }

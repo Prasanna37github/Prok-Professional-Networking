@@ -11,7 +11,6 @@ const PostListEnhanced: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasNext, setHasNext] = useState(false);
   const [totalPosts, setTotalPosts] = useState(0);
@@ -30,7 +29,6 @@ const PostListEnhanced: React.FC = () => {
     try {
       setLoading(page === 1);
       setLoadingMore(page > 1);
-      setError(null);
 
       const response = await postsApi.getPosts(page, 10, filters);
       
@@ -44,7 +42,7 @@ const PostListEnhanced: React.FC = () => {
       setTotalPosts(response.total);
       setCurrentPage(page);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch posts');
+      console.error('Failed to fetch posts:', err);
     } finally {
       setLoading(false);
       setLoadingMore(false);
