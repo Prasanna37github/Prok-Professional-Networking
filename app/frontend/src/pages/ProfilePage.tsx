@@ -1,13 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import ProfileHeader from '../components/profile/ProfileHeader';
-import ProfileBio from '../components/profile/ProfileBio';
-import ProfileSkills from '../components/profile/ProfileSkills';
-import ProfileExperience from '../components/profile/ProfileExperience';
-import ProfileEducation from '../components/profile/ProfileEducation';
-import ProfileContact from '../components/profile/ProfileContact';
-import ProfileActivity from '../components/profile/ProfileActivity';
-import ProfileTimeline from '../components/profile/ProfileTimeline';
+import ProfileLayout from '../components/profile/ProfileLayout';
 import ProfileEditForm from '../components/profile/ProfileEditForm';
 import { profileApi } from '../components/profile/api';
 
@@ -73,50 +66,17 @@ const ProfilePage: React.FC = () => {
   const safeSocials = Array.isArray(user.socials) ? user.socials : [];
 
   return (
-    <div className="max-w-4xl mx-auto p-4 text-black">
+    <div className="text-black">
       {editing ? (
-        <ProfileEditForm 
-          user={user} 
-          onSave={handleSave} 
-          onCancel={handleCancel}
-        />
-      ) : (
-        <>
-          <ProfileHeader user={user} />
-          <ProfileBio bio={user.bio || ''} />
-          <ProfileSkills skills={safeSkills} />
-          <ProfileExperience experience={safeExperience} />
-          <ProfileEducation education={safeEducation} />
-          <ProfileContact contact={{
-            email: user.email || '',
-            phone: user.phone || '',
-            location: user.location || ''
-          }} />
-          {/* You can add activity/timeline if you fetch them from backend */}
-        </>
-      )}
-      
-      {!editing && (
-        <div className="mt-6 text-center space-x-4">
-          <Link
-            to="/dashboard"
-            className="inline-block px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
-          >
-            Go to Dashboard
-          </Link>
-          <button
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-            onClick={() => setEditing(true)}
-          >
-            Edit Profile
-          </button>
-          <Link
-            to="/posts/create"
-            className="inline-block px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
-          >
-            Create Post
-          </Link>
+        <div className="max-w-4xl mx-auto p-4">
+          <ProfileEditForm 
+            user={user} 
+            onSave={handleSave} 
+            onCancel={handleCancel}
+          />
         </div>
+      ) : (
+        <ProfileLayout />
       )}
     </div>
   );

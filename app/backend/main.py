@@ -52,15 +52,7 @@ if __name__ == '__main__':
     setup_database()
     
     # Determine port
-    port = 5000
-    # Check for environment variable
-    if os.environ.get('PORT'):
-        port = int(os.environ['PORT'])
-    # Check for command line argument
-    elif len(sys.argv) > 1:
-        try:
-            port = int(sys.argv[1])
-        except Exception:
-            pass
+    port = int(os.environ.get('PORT', 5000))
+    
     # Run the app
-    app.run(debug=True, port=port)
+    app.run(host='0.0.0.0', port=port, debug=False)

@@ -295,4 +295,49 @@ def update_socials():
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'message': f'Error updating social links: {str(e)}'}), 500 
+        return jsonify({'message': f'Error updating social links: {str(e)}'}), 500
+
+@profile_bp.route('/api/profile', methods=['DELETE'])
+@jwt_required()
+def delete_profile():
+    """Delete user profile and account"""
+    try:
+        user_id = int(get_jwt_identity())  # Convert string back to int
+        user = User.query.get(user_id)
+        
+        if not user:
+            return jsonify({'message': 'User not found'}), 404
+        
+        # Delete user's posts
+        from models.post import Post
+        Post.query.filter_by(user_id=user_id).delete()
+        
+        # Delete user's comments
+        from models.comment import Comment
+        Comment.query.filter_by(user_id=user_id).delete()
+        
+        # Delete user's likes
+        from models.like import Like
+        Like.query.filter_by(user_id=user_id).delete()
+        
+        # Delete user's messages
+        from models.message import Message
+        Message.query.filter_by(sender_id=user_id).delete()
+        Message.query.filter_by(receiver_id=user_id).delete()
+        
+        # Delete user's jobs
+        from models.job import Job
+        Job.query.filter_by(user_id=user_id).delete()
+        
+        # Finally delete the user
+        db.session.delete(user)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Profile deleted successfully'
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': f'Error deleting profile: {str(e)}'}), 500 

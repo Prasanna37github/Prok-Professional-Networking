@@ -1,0 +1,45 @@
+services:
+  # Backend API Service
+  - type: web
+    name: prok-backend
+    env: python
+    plan: free
+    buildCommand: |
+      cd app/backend
+      pip install -r requirements.txt
+    startCommand: |
+      cd app/backend
+      python main.py
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: prok-database
+          property: connectionString
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: UPLOAD_FOLDER
+        value: uploads
+      - key: MAX_CONTENT_LENGTH
+        value: 16777216
+
+  # Frontend Web Service
+  - type: web
+    name: prok-frontend
+    env: static
+    plan: free
+    buildCommand: |
+      cd app/frontend
+      npm install
+      npm run build
+    staticPublishPath: app/frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://prok-backend.onrender.com
+
+databases:
+  - name: prok-database
+    databaseName: prok_app
+    user: prok_user
+    plan: free 

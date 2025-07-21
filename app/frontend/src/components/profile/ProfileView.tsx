@@ -7,6 +7,7 @@ import ProfileEducation from './ProfileEducation';
 import ProfileContact from './ProfileContact';
 import ProfileActivity from './ProfileActivity';
 import ProfileTimeline from './ProfileTimeline';
+import UserPosts from './UserPosts';
 import { mockUser, mockActivity, mockTimeline } from '../../mock/mockProfile';
 
 const initialUser = { ...mockUser };
@@ -156,6 +157,7 @@ const ProfileView: React.FC = () => {
               <div className="bg-white rounded-lg shadow p-6"><ProfileSkills skills={user.skills} /></div>
               <div className="bg-white rounded-lg shadow p-6"><ProfileExperience experience={user.experience} /></div>
               <div className="bg-white rounded-lg shadow p-6"><ProfileEducation education={user.education} /></div>
+              <div className="bg-white rounded-lg shadow p-6"><UserPosts isOwnProfile={true} /></div>
               <div className="bg-white rounded-lg shadow p-6"><ProfileActivity activity={mockActivity} /></div>
               <div className="bg-white rounded-lg shadow p-6"><ProfileTimeline timeline={mockTimeline} /></div>
             </>

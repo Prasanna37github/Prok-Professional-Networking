@@ -213,18 +213,18 @@ const PostCreate: React.FC = () => {
   );
 
   return (
-    <div className={`max-w-4xl mx-auto p-4 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-lg p-6 ${isDarkMode ? 'text-white' : 'text-black'}`}>
+    <div className={`max-w-4xl mx-auto p-4 ${isDarkMode ? 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900' : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50'}`}>
+      <div className={`${isDarkMode ? 'bg-gradient-to-br from-slate-800 to-purple-800' : 'bg-gradient-to-br from-white to-indigo-50'} rounded-xl shadow-xl p-6 backdrop-blur-sm`}>
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h1 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Create Post</h1>
+          <h1 className={`text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent`}>Create Post</h1>
           <div className="flex items-center space-x-3">
             <button
               onClick={() => navigate('/dashboard')}
-              className={`px-4 py-2 rounded-lg transition-colors font-medium flex items-center ${
+              className={`px-4 py-2 rounded-xl transition-all duration-200 hover:scale-105 font-medium flex items-center ${
                 isDarkMode 
-                  ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-gradient-to-r from-slate-700 to-purple-700 text-purple-200 hover:from-slate-600 hover:to-purple-600 shadow-lg' 
+                  : 'bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700 hover:from-indigo-200 hover:to-purple-200 shadow-md'
               }`}
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -234,14 +234,16 @@ const PostCreate: React.FC = () => {
             </button>
             <button
               onClick={() => setIsPreviewMode(!isPreviewMode)}
-              className="px-4 py-2 text-blue-600 hover:text-blue-700 font-medium"
+              className={`px-4 py-2 font-medium transition-all duration-200 hover:scale-105 ${
+                isDarkMode ? 'text-purple-300 hover:text-pink-400' : 'text-indigo-600 hover:text-pink-600'
+              }`}
             >
               Preview
             </button>
             <button
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              className="px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-lg transition-all duration-200"
             >
               {isSubmitting ? 'Posting...' : 'Post'}
             </button>
@@ -254,7 +256,7 @@ const PostCreate: React.FC = () => {
           <div className="space-y-6">
             {/* Title Section */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-purple-200' : 'text-indigo-700'}`}>
                 Title
               </label>
               <input
@@ -262,9 +264,9 @@ const PostCreate: React.FC = () => {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Enter post title"
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.title ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                  errors.title ? 'border-red-500' : isDarkMode ? 'border-purple-600' : 'border-indigo-300'
+                } ${isDarkMode ? 'bg-gradient-to-r from-slate-700 to-purple-700 text-white placeholder-purple-300' : 'bg-gradient-to-r from-white to-indigo-50 text-gray-900 placeholder-gray-500'}`}
               />
               {errors.title && (
                 <p className="mt-1 text-sm text-red-600">{errors.title}</p>
@@ -273,15 +275,21 @@ const PostCreate: React.FC = () => {
 
             {/* Content Section */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-purple-200' : 'text-indigo-700'}`}>
                 Content
               </label>
               
               {/* Rich Text Toolbar */}
-              <div className="flex items-center space-x-2 mb-2 p-2 bg-gray-50 rounded-t-lg border border-gray-300">
+              <div className={`flex items-center space-x-2 mb-2 p-2 rounded-t-xl border ${
+                isDarkMode ? 'bg-gradient-to-r from-slate-700 to-purple-700 border-purple-600' : 'bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-300'
+              }`}>
                 <button
                   onClick={toggleBold}
-                  className={`p-2 rounded ${isBold ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-200'}`}
+                  className={`p-2 rounded transition-all duration-200 ${
+                    isBold 
+                      ? isDarkMode ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-600' 
+                      : isDarkMode ? 'hover:bg-purple-600 hover:text-white' : 'hover:bg-purple-100'
+                  }`}
                   title="Bold"
                 >
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -290,20 +298,26 @@ const PostCreate: React.FC = () => {
                 </button>
                 <button
                   onClick={toggleItalic}
-                  className={`p-2 rounded ${isItalic ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-200'}`}
+                  className={`p-2 rounded transition-all duration-200 ${
+                    isItalic 
+                      ? isDarkMode ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-600' 
+                      : isDarkMode ? 'hover:bg-purple-600 hover:text-white' : 'hover:bg-purple-100'
+                  }`}
                   title="Italic"
                 >
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M8 2h8v2h-2.5l-3 12h2.5v2H4v-2h2.5l3-12H8V2z"/>
                   </svg>
                 </button>
-                <div className="w-px h-6 bg-gray-300"></div>
+                <div className={`w-px h-6 ${isDarkMode ? 'bg-purple-600' : 'bg-indigo-300'}`}></div>
                 
                 {/* More Options Dropdown */}
                 <div className="relative">
                   <button 
                     onClick={() => setShowMoreOptions(!showMoreOptions)}
-                    className="p-2 rounded hover:bg-gray-200" 
+                    className={`p-2 rounded transition-all duration-200 ${
+                      isDarkMode ? 'hover:bg-purple-600 hover:text-white' : 'hover:bg-purple-100'
+                    }`}
                     title="More options"
                   >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -312,13 +326,17 @@ const PostCreate: React.FC = () => {
                   </button>
                   
                   {showMoreOptions && (
-                    <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
+                    <div className={`absolute top-full left-0 mt-1 w-48 rounded-xl shadow-2xl z-10 backdrop-blur-sm ${
+                      isDarkMode ? 'bg-gradient-to-br from-slate-800 to-purple-800 border border-purple-600' : 'bg-gradient-to-br from-white to-indigo-50 border border-indigo-200'
+                    }`}>
                       <button
                         onClick={() => {
                           setShowLinkModal(true);
                           setShowMoreOptions(false);
                         }}
-                        className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
+                        className={`w-full px-4 py-2 text-left transition-all duration-200 hover:scale-105 flex items-center space-x-2 ${
+                          isDarkMode ? 'text-purple-200 hover:bg-gradient-to-r hover:from-purple-700 hover:to-pink-700' : 'text-indigo-700 hover:bg-gradient-to-r hover:from-indigo-100 hover:to-purple-100'
+                        }`}
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
@@ -330,7 +348,9 @@ const PostCreate: React.FC = () => {
                           setShowImageModal(true);
                           setShowMoreOptions(false);
                         }}
-                        className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
+                        className={`w-full px-4 py-2 text-left transition-all duration-200 hover:scale-105 flex items-center space-x-2 ${
+                          isDarkMode ? 'text-purple-200 hover:bg-gradient-to-r hover:from-purple-700 hover:to-pink-700' : 'text-indigo-700 hover:bg-gradient-to-r hover:from-indigo-100 hover:to-purple-100'
+                        }`}
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -348,9 +368,9 @@ const PostCreate: React.FC = () => {
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Write your post content here..."
                 rows={8}
-                className={`w-full px-3 py-2 border border-gray-300 rounded-b-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y ${
-                  errors.content ? 'border-red-500' : ''
-                }`}
+                className={`w-full px-3 py-2 border rounded-b-xl focus:outline-none focus:ring-2 focus:ring-purple-500 resize-y ${
+                  errors.content ? 'border-red-500' : isDarkMode ? 'border-purple-600' : 'border-indigo-300'
+                } ${isDarkMode ? 'bg-gradient-to-r from-slate-700 to-purple-700 text-white placeholder-purple-300' : 'bg-gradient-to-r from-white to-indigo-50 text-gray-900 placeholder-gray-500'}`}
               />
               {errors.content && (
                 <p className="mt-1 text-sm text-red-600">{errors.content}</p>
@@ -359,12 +379,14 @@ const PostCreate: React.FC = () => {
 
             {/* Media Section */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-purple-200' : 'text-indigo-700'}`}>
                 Media
               </label>
               <div
-                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                  dragActive ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
+                className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${
+                  dragActive 
+                    ? isDarkMode ? 'border-purple-400 bg-purple-900/20' : 'border-purple-400 bg-purple-50' 
+                    : isDarkMode ? 'border-purple-600 hover:border-purple-400' : 'border-indigo-300 hover:border-indigo-400'
                 }`}
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}
@@ -373,13 +395,13 @@ const PostCreate: React.FC = () => {
                 onClick={() => fileInputRef.current?.click()}
               >
                 <div className="flex flex-col items-center">
-                  <svg className="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className={`w-12 h-12 mb-4 ${isDarkMode ? 'text-purple-400' : 'text-indigo-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
-                  <p className="text-lg font-medium text-gray-700 mb-2">
+                  <p className={`text-lg font-medium mb-2 ${isDarkMode ? 'text-purple-200' : 'text-indigo-700'}`}>
                     Drag and drop files here or click to upload
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className={`text-sm ${isDarkMode ? 'text-purple-300' : 'text-indigo-600'}`}>
                     Supports images, videos, and audio up to 10MB
                   </p>
                 </div>
@@ -423,7 +445,7 @@ const PostCreate: React.FC = () => {
 
             {/* Post Settings */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <label className={`block text-sm font-medium mb-3 ${isDarkMode ? 'text-purple-200' : 'text-indigo-700'}`}>
                 Post Settings
               </label>
               <div className="space-y-3">
@@ -432,18 +454,22 @@ const PostCreate: React.FC = () => {
                     type="checkbox"
                     checked={allowComments}
                     onChange={(e) => setAllowComments(e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className={`rounded border-gray-300 focus:ring-purple-500 ${
+                      isDarkMode ? 'text-purple-600 bg-slate-700 border-purple-600' : 'text-purple-600'
+                    }`}
                   />
-                  <span className="ml-2 text-sm text-gray-700">Allow Comments</span>
+                  <span className={`ml-2 text-sm ${isDarkMode ? 'text-purple-200' : 'text-indigo-700'}`}>Allow Comments</span>
                 </label>
                 <label className="flex items-center">
                   <input
                     type="checkbox"
                     checked={isPublic}
                     onChange={(e) => setIsPublic(e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className={`rounded border-gray-300 focus:ring-purple-500 ${
+                      isDarkMode ? 'text-purple-600 bg-slate-700 border-purple-600' : 'text-purple-600'
+                    }`}
                   />
-                  <span className="ml-2 text-sm text-gray-700">Public Post</span>
+                  <span className={`ml-2 text-sm ${isDarkMode ? 'text-purple-200' : 'text-indigo-700'}`}>Public Post</span>
                 </label>
               </div>
             </div>
@@ -460,12 +486,12 @@ const PostCreate: React.FC = () => {
 
       {/* Link Insert Modal */}
       {showLinkModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Insert Link</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm">
+          <div className={`${isDarkMode ? 'bg-gradient-to-br from-slate-800 to-purple-800' : 'bg-gradient-to-br from-white to-indigo-50'} rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border ${isDarkMode ? 'border-purple-600' : 'border-indigo-200'}`}>
+            <h3 className={`text-lg font-semibold mb-4 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent`}>Insert Link</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-purple-200' : 'text-indigo-700'}`}>
                   Link Text
                 </label>
                 <input
@@ -473,11 +499,13 @@ const PostCreate: React.FC = () => {
                   value={linkText}
                   onChange={(e) => setLinkText(e.target.value)}
                   placeholder="Link text to display"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                    isDarkMode ? 'bg-gradient-to-r from-slate-700 to-purple-700 border-purple-600 text-white placeholder-purple-300' : 'bg-gradient-to-r from-white to-indigo-50 border-indigo-300 text-gray-900 placeholder-gray-500'
+                  }`}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-purple-200' : 'text-indigo-700'}`}>
                   URL
                 </label>
                 <input
@@ -485,20 +513,26 @@ const PostCreate: React.FC = () => {
                   value={linkUrl}
                   onChange={(e) => setLinkUrl(e.target.value)}
                   placeholder="https://example.com"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                    isDarkMode ? 'bg-gradient-to-r from-slate-700 to-purple-700 border-purple-600 text-white placeholder-purple-300' : 'bg-gradient-to-r from-white to-indigo-50 border-indigo-300 text-gray-900 placeholder-gray-500'
+                  }`}
                 />
               </div>
             </div>
             <div className="flex justify-end space-x-3 mt-6">
               <button
                 onClick={() => setShowLinkModal(false)}
-                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+                className={`px-4 py-2 rounded-xl transition-all duration-200 hover:scale-105 ${
+                  isDarkMode 
+                    ? 'bg-gradient-to-r from-slate-700 to-purple-700 text-purple-200 hover:from-slate-600 hover:to-purple-600 shadow-lg' 
+                    : 'bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700 hover:from-indigo-200 hover:to-purple-200 shadow-md'
+                }`}
               >
                 Cancel
               </button>
               <button
                 onClick={insertLink}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 transform hover:scale-105 transition-all duration-200 shadow-lg"
               >
                 Insert
               </button>
@@ -509,22 +543,26 @@ const PostCreate: React.FC = () => {
 
       {/* Image Insert Modal */}
       {showImageModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Add Image</h3>
-            <p className="text-gray-600 mb-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm">
+          <div className={`${isDarkMode ? 'bg-gradient-to-br from-slate-800 to-purple-800' : 'bg-gradient-to-br from-white to-indigo-50'} rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border ${isDarkMode ? 'border-purple-600' : 'border-indigo-200'}`}>
+            <h3 className={`text-lg font-semibold mb-4 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent`}>Add Image</h3>
+            <p className={`mb-4 ${isDarkMode ? 'text-purple-200' : 'text-indigo-700'}`}>
               This will insert a placeholder for an image. You can upload images using the media section below.
             </p>
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setShowImageModal(false)}
-                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+                className={`px-4 py-2 rounded-xl transition-all duration-200 hover:scale-105 ${
+                  isDarkMode 
+                    ? 'bg-gradient-to-r from-slate-700 to-purple-700 text-purple-200 hover:from-slate-600 hover:to-purple-600 shadow-lg' 
+                    : 'bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700 hover:from-indigo-200 hover:to-purple-200 shadow-md'
+                }`}
               >
                 Cancel
               </button>
               <button
                 onClick={insertImage}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 transform hover:scale-105 transition-all duration-200 shadow-lg"
               >
                 Insert Placeholder
               </button>

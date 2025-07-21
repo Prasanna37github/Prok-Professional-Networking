@@ -92,4 +92,14 @@ export const profileApi = {
     });
     return response.json();
   },
+
+  deleteProfile: async () => {
+    const response = await fetch(`${API_URL}/api/profile`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+    return response.json();
+  },
 }; 

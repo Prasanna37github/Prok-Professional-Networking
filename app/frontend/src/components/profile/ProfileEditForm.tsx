@@ -14,69 +14,11 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({ user, onSave, onCance
     location: user.location || '',
     bio: user.bio || '',
     phone: user.phone || '',
+    email: user.email || '',
     skills: user.skills || [],
     experience: user.experience || [],
-    education: user.education || [],
-    socials: user.socials || []
+    education: user.education || []
   });
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(user.avatar ? `http://localhost:5000/api/profile/image/${user.avatar}` : null);
-
-  // Initialize form with user data
-  useEffect(() => {
-    setForm({
-      name: user.name || '',
-      title: user.title || '',
-      location: user.location || '',
-      bio: user.bio || '',
-      phone: user.phone || '',
-      skills: user.skills || [],
-      experience: user.experience || [],
-      education: user.education || [],
-      socials: user.socials || []
-    });
-    setImagePreview(user.avatar ? `http://localhost:5000/api/profile/image/${user.avatar}` : null);
-  }, [user]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedImage(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // Skills management
-  const addSkill = () => {
-    setForm({
-      ...form,
-      skills: [...form.skills, { name: '', level: 'Beginner' }]
-    });
-  };
-
-  const updateSkill = (index: number, field: string, value: string) => {
-    const updatedSkills = [...form.skills];
-    updatedSkills[index] = { ...updatedSkills[index], [field]: value };
-    setForm({ ...form, skills: updatedSkills });
-  };
-
-  const removeSkill = (index: number) => {
-    setForm({
-      ...form,
-      skills: form.skills.filter((_: any, i: number) => i !== index)
-    });
-  };
 
   // Experience management
   const addExperience = () => {
@@ -133,6 +75,88 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({ user, onSave, onCance
     });
   };
 
+  // Skills management
+  const [newSkill, setNewSkill] = useState('');
+
+  const addSkill = () => {
+    if (newSkill.trim() && !form.skills.includes(newSkill.trim())) {
+      setForm({
+        ...form,
+        skills: [...form.skills, newSkill.trim()]
+      });
+      setNewSkill('');
+    }
+  };
+
+  const removeSkill = (skillToRemove: string) => {
+    setForm({
+      ...form,
+      skills: form.skills.filter((skill: any) => skill !== skillToRemove)
+    });
+  };
+
+  const handleSkillKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addSkill();
+    }
+  };
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>(
+    user.avatar ? `http://localhost:5000/api/profile/image/${user.avatar}` : '/default-avatar.png'
+  );
+
+  // Initialize form with user data
+  useEffect(() => {
+    setForm({
+      name: user.name || '',
+      title: user.title || '',
+      location: user.location || '',
+      bio: user.bio || '',
+      phone: user.phone || '',
+      email: user.email || '',
+      skills: user.skills || [],
+      experience: user.experience || [],
+      education: user.education || []
+    });
+    setImagePreview(user.avatar ? `http://localhost:5000/api/profile/image/${user.avatar}` : '/default-avatar.png');
+  }, [user]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+      if (!validTypes.includes(file.type)) {
+        setError('Please select a valid image file (JPEG, PNG, or GIF)');
+        return;
+      }
+      
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image size must be less than 5MB');
+        return;
+      }
+      
+      setSelectedImage(file);
+      setError(''); // Clear any previous errors
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -150,13 +174,32 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({ user, onSave, onCance
       // Upload image if selected
       let avatarFilename = user.avatar;
       if (selectedImage) {
-        const imageResult = await profileApi.uploadImage(selectedImage);
-        if (!imageResult.success) {
-          setError('Failed to upload image: ' + imageResult.message);
+        setImageUploading(true);
+        try {
+          const imageResult = await profileApi.uploadImage(selectedImage);
+          if (!imageResult.success) {
+            setError('Failed to upload image: ' + (imageResult.message || 'Unknown error'));
+            setLoading(false);
+            setImageUploading(false);
+            return;
+          }
+          // Extract filename from the avatar_url
+          avatarFilename = imageResult.avatar_url?.split('/').pop() || null;
+          if (!avatarFilename) {
+            setError('Failed to get uploaded image filename');
+            setLoading(false);
+            setImageUploading(false);
+            return;
+          }
+        } catch (uploadError) {
+          console.error('Image upload error:', uploadError);
+          setError('Failed to upload image. Please try again.');
           setLoading(false);
+          setImageUploading(false);
           return;
+        } finally {
+          setImageUploading(false);
         }
-        avatarFilename = imageResult.avatar_url?.split('/').pop() || selectedImage.name;
       }
 
       // Update profile
@@ -192,308 +235,347 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({ user, onSave, onCance
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-6 bg-white rounded-lg shadow-lg space-y-6 max-h-screen overflow-y-auto">
-      <div className="flex items-center space-x-4">
-        <div className="relative">
-          <img
-            src={imagePreview || '/default-avatar.png'}
-            alt="Profile"
-            className="w-20 h-20 rounded-full object-cover border-2 border-gray-200"
-          />
-          <label className="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-1 cursor-pointer">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="hidden"
-            />
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-          </label>
-        </div>
-        <div>
-          <h2 className="text-xl font-semibold">Edit Profile</h2>
-          <p className="text-gray-600">Update your professional information</p>
-        </div>
-      </div>
-
-      {/* Basic Information */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-          <input
-            type="text"
-            name="name"
-            value={form.name}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter your full name"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Professional Title *</label>
-          <input
-            type="text"
-            name="title"
-            value={form.title}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g., Software Engineer"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Location *</label>
-          <input
-            type="text"
-            name="location"
-            value={form.location}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g., San Francisco, CA"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-          <input
-            type="tel"
-            name="phone"
-            value={form.phone}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter your phone number"
-          />
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Bio *</label>
-        <textarea
-          name="bio"
-          value={form.bio}
-          onChange={handleChange}
-          rows={4}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Tell us about yourself..."
-          required
-        />
-      </div>
-
-      {/* Skills Section */}
-      <div>
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-medium text-gray-900">Skills</h3>
-          <button
-            type="button"
-            onClick={addSkill}
-            className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600"
-          >
-            Add Skill
-          </button>
-        </div>
-        {form.skills.map((skill: any, index: number) => (
-          <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
-            <input
-              type="text"
-              value={skill.name || ''}
-              onChange={(e) => updateSkill(index, 'name', e.target.value)}
-              placeholder="Skill name"
-              className="px-3 py-2 border border-gray-300 rounded-md"
-            />
-            <select
-              value={skill.level || 'Beginner'}
-              onChange={(e) => updateSkill(index, 'level', e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md"
-            >
-              <option value="Beginner">Beginner</option>
-              <option value="Intermediate">Intermediate</option>
-              <option value="Advanced">Advanced</option>
-              <option value="Expert">Expert</option>
-            </select>
-            <button
-              type="button"
-              onClick={() => removeSkill(index)}
-              className="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
-            >
-              Remove
-            </button>
-          </div>
-        ))}
-      </div>
-
-      {/* Experience Section */}
-      <div>
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-medium text-gray-900">Work Experience</h3>
-          <button
-            type="button"
-            onClick={addExperience}
-            className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600"
-          >
-            Add Experience
-          </button>
-        </div>
-        {form.experience.map((exp: any, index: number) => (
-          <div key={index} className="border border-gray-200 rounded-lg p-4 mb-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <input
-                type="text"
-                value={exp.title || ''}
-                onChange={(e) => updateExperience(index, 'title', e.target.value)}
-                placeholder="Job Title"
-                className="px-3 py-2 border border-gray-300 rounded-md"
-              />
-              <input
-                type="text"
-                value={exp.company || ''}
-                onChange={(e) => updateExperience(index, 'company', e.target.value)}
-                placeholder="Company"
-                className="px-3 py-2 border border-gray-300 rounded-md"
-              />
-              <input
-                type="month"
-                value={exp.start_date || ''}
-                onChange={(e) => updateExperience(index, 'start_date', e.target.value)}
-                placeholder="Start Date"
-                className="px-3 py-2 border border-gray-300 rounded-md"
-              />
-              <input
-                type="month"
-                value={exp.end_date || ''}
-                onChange={(e) => updateExperience(index, 'end_date', e.target.value)}
-                placeholder="End Date"
-                className="px-3 py-2 border border-gray-300 rounded-md"
-              />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
+      <div className="max-w-4xl mx-auto px-4">
+        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg p-8 space-y-8">
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-gray-200 pb-6">
+            <div className="flex items-center space-x-6">
+              <div className="relative">
+                <img
+                  src={imagePreview}
+                  alt="Profile"
+                  className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
+                  onError={(e) => {
+                    e.currentTarget.src = '/default-avatar.png';
+                  }}
+                />
+                <label className={`absolute bottom-0 right-0 bg-purple-600 text-white rounded-full p-2 cursor-pointer hover:bg-purple-700 transition-colors shadow-lg ${imageUploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                    disabled={imageUploading}
+                  />
+                  {imageUploading ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  )}
+                </label>
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Edit Profile</h1>
+                <p className="text-gray-600 mt-1">Update your professional information</p>
+              </div>
             </div>
-            <textarea
-              value={exp.description || ''}
-              onChange={(e) => updateExperience(index, 'description', e.target.value)}
-              placeholder="Job Description"
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md mb-2"
-            />
-            <button
-              type="button"
-              onClick={() => removeExperience(index)}
-              className="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
-            >
-              Remove Experience
-            </button>
-          </div>
-        ))}
-      </div>
-
-      {/* Education Section */}
-      <div>
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-medium text-gray-900">Education</h3>
-          <button
-            type="button"
-            onClick={addEducation}
-            className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600"
-          >
-            Add Education
-          </button>
-        </div>
-        {form.education.map((edu: any, index: number) => (
-          <div key={index} className="border border-gray-200 rounded-lg p-4 mb-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <input
-                type="text"
-                value={edu.degree || ''}
-                onChange={(e) => updateEducation(index, 'degree', e.target.value)}
-                placeholder="Degree"
-                className="px-3 py-2 border border-gray-300 rounded-md"
-              />
-              <input
-                type="text"
-                value={edu.field || ''}
-                onChange={(e) => updateEducation(index, 'field', e.target.value)}
-                placeholder="Field of Study"
-                className="px-3 py-2 border border-gray-300 rounded-md"
-              />
-              <input
-                type="text"
-                value={edu.school || ''}
-                onChange={(e) => updateEducation(index, 'school', e.target.value)}
-                placeholder="School/University"
-                className="px-3 py-2 border border-gray-300 rounded-md"
-              />
-              <input
-                type="month"
-                value={edu.start_date || ''}
-                onChange={(e) => updateEducation(index, 'start_date', e.target.value)}
-                placeholder="Start Date"
-                className="px-3 py-2 border border-gray-300 rounded-md"
-              />
-              <input
-                type="month"
-                value={edu.end_date || ''}
-                onChange={(e) => updateEducation(index, 'end_date', e.target.value)}
-                placeholder="End Date"
-                className="px-3 py-2 border border-gray-300 rounded-md"
-              />
+            <div className="flex space-x-3">
+              <button
+                type="button"
+                onClick={onCancel}
+                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Saving...' : 'Save Changes'}
+              </button>
             </div>
-            <textarea
-              value={edu.description || ''}
-              onChange={(e) => updateEducation(index, 'description', e.target.value)}
-              placeholder="Description"
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md mb-2"
-            />
-            <button
-              type="button"
-              onClick={() => removeEducation(index)}
-              className="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
-            >
-              Remove Education
-            </button>
           </div>
-        ))}
+
+          {/* Error and Success Messages */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center">
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {error}
+            </div>
+          )}
+
+          {success && (
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center">
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              {success}
+            </div>
+          )}
+
+          {imageUploading && (
+            <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg flex items-center">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-700 mr-2"></div>
+              Uploading image...
+            </div>
+          )}
+
+                      {/* Basic Information */}
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={form.name}
+                      onChange={handleChange}
+                      placeholder="Enter your full name"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Professional Title *</label>
+                    <input
+                      type="text"
+                      name="title"
+                      value={form.title}
+                      onChange={handleChange}
+                      placeholder="e.g., Software Engineer, Product Manager"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Location *</label>
+                    <input
+                      type="text"
+                      name="location"
+                      value={form.location}
+                      onChange={handleChange}
+                      placeholder="City, Country"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={form.phone}
+                      onChange={handleChange}
+                      placeholder="+1 (555) 123-4567"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={form.email}
+                      onChange={handleChange}
+                      placeholder="your.email@example.com"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Bio */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Bio *</label>
+                <textarea
+                  name="bio"
+                  value={form.bio}
+                  onChange={handleChange}
+                  placeholder="Tell us about yourself, your experience, and what you're passionate about..."
+                  rows={4}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                  required
+                />
+              </div>
+
+              {/* Skills Section */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Skills</h3>
+                <div className="mb-4">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newSkill}
+                      onChange={(e) => setNewSkill(e.target.value)}
+                      onKeyPress={handleSkillKeyPress}
+                      placeholder="Add a skill (e.g., JavaScript, Project Management)"
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                    <button
+                      type="button"
+                      onClick={addSkill}
+                      className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+                
+                {form.skills.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {form.skills.map((skill: any, index: number) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-2 px-3 py-2 bg-purple-100 text-purple-800 rounded-full text-sm font-medium"
+                      >
+                        <span>{typeof skill === 'string' ? skill : skill.name || skill.skill || 'Unknown Skill'}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeSkill(typeof skill === 'string' ? skill : skill.name || skill.skill || '')}
+                          className="text-purple-600 hover:text-purple-800 transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Experience Section */}
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Work Experience</h3>
+                  <button
+                    type="button"
+                    onClick={addExperience}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                  >
+                    Add Experience
+                  </button>
+                </div>
+                {form.experience.map((exp: any, index: number) => (
+                  <div key={index} className="border border-gray-200 rounded-lg p-4 mb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <input
+                        type="text"
+                        value={exp.title || ''}
+                        onChange={(e) => updateExperience(index, 'title', e.target.value)}
+                        placeholder="Job Title"
+                        className="px-3 py-2 border border-gray-300 rounded-md"
+                      />
+                      <input
+                        type="text"
+                        value={exp.company || ''}
+                        onChange={(e) => updateExperience(index, 'company', e.target.value)}
+                        placeholder="Company"
+                        className="px-3 py-2 border border-gray-300 rounded-md"
+                      />
+                      <input
+                        type="month"
+                        value={exp.start_date || ''}
+                        onChange={(e) => updateExperience(index, 'start_date', e.target.value)}
+                        placeholder="Start Date"
+                        className="px-3 py-2 border border-gray-300 rounded-md"
+                      />
+                      <input
+                        type="month"
+                        value={exp.end_date || ''}
+                        onChange={(e) => updateExperience(index, 'end_date', e.target.value)}
+                        placeholder="End Date"
+                        className="px-3 py-2 border border-gray-300 rounded-md"
+                      />
+                    </div>
+                    <textarea
+                      value={exp.description || ''}
+                      onChange={(e) => updateExperience(index, 'description', e.target.value)}
+                      placeholder="Job Description"
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md mb-2"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeExperience(index)}
+                      className="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+                    >
+                      Remove Experience
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Education Section */}
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Education</h3>
+                  <button
+                    type="button"
+                    onClick={addEducation}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                  >
+                    Add Education
+                  </button>
+                </div>
+                {form.education.map((edu: any, index: number) => (
+                  <div key={index} className="border border-gray-200 rounded-lg p-4 mb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <input
+                        type="text"
+                        value={edu.degree || ''}
+                        onChange={(e) => updateEducation(index, 'degree', e.target.value)}
+                        placeholder="Degree"
+                        className="px-3 py-2 border border-gray-300 rounded-md"
+                      />
+                      <input
+                        type="text"
+                        value={edu.field || ''}
+                        onChange={(e) => updateEducation(index, 'field', e.target.value)}
+                        placeholder="Field of Study"
+                        className="px-3 py-2 border border-gray-300 rounded-md"
+                      />
+                      <input
+                        type="text"
+                        value={edu.school || ''}
+                        onChange={(e) => updateEducation(index, 'school', e.target.value)}
+                        placeholder="School/University"
+                        className="px-3 py-2 border border-gray-300 rounded-md"
+                      />
+                      <input
+                        type="month"
+                        value={edu.start_date || ''}
+                        onChange={(e) => updateEducation(index, 'start_date', e.target.value)}
+                        placeholder="Start Date"
+                        className="px-3 py-2 border border-gray-300 rounded-md"
+                      />
+                      <input
+                        type="month"
+                        value={edu.end_date || ''}
+                        onChange={(e) => updateEducation(index, 'end_date', e.target.value)}
+                        placeholder="End Date"
+                        className="px-3 py-2 border border-gray-300 rounded-md"
+                      />
+                    </div>
+                    <textarea
+                      value={edu.description || ''}
+                      onChange={(e) => updateEducation(index, 'description', e.target.value)}
+                      placeholder="Description"
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md mb-2"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeEducation(index)}
+                      className="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+                    >
+                      Remove Education
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+        </form>
       </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
-          {success}
-        </div>
-      )}
-
-      <div className="flex space-x-3">
-        <button
-          type="submit"
-          disabled={loading}
-          className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-        >
-          {loading ? 'Saving...' : 'Save Changes'}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          onClick={() => window.location.href = '/dashboard'}
-          className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
-        >
-          Go to Dashboard
-        </button>
-      </div>
-    </form>
+    </div>
   );
 };
 

@@ -248,10 +248,14 @@ def delete_post(post_id):
     """Delete a post"""
     try:
         current_user_id = get_jwt_identity()
+        print(f"Attempting to delete post {post_id} by user {current_user_id}")
+        
         post = Post.query.get_or_404(post_id)
+        print(f"Found post: {post.id}, owner: {post.user_id}")
         
         # Check if user owns the post
         if post.user_id != current_user_id:
+            print(f"Unauthorized: user {current_user_id} trying to delete post owned by {post.user_id}")
             return jsonify({'error': 'Unauthorized'}), 403
         
         # Delete associated media file if exists
@@ -260,18 +264,20 @@ def delete_post(post_id):
                 file_path = os.path.join(current_app.root_path, post.media_url.lstrip('/'))
                 if os.path.exists(file_path):
                     os.remove(file_path)
+                    print(f"Deleted media file: {file_path}")
             except Exception as e:
                 print(f"Error deleting media file: {str(e)}")
         
         db.session.delete(post)
         db.session.commit()
+        print(f"Successfully deleted post {post_id}")
         
         return jsonify({'message': 'Post deleted successfully'}), 200
         
     except Exception as e:
         db.session.rollback()
-        print(f"Error deleting post: {str(e)}")
-        return jsonify({'error': 'Failed to delete post'}), 500
+        print(f"Error deleting post {post_id}: {str(e)}")
+        return jsonify({'error': f'Failed to delete post: {str(e)}'}), 500
 
 # Serve uploaded files
 @posts_bp.route('/uploads/posts/<filename>')

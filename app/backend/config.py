@@ -5,8 +5,12 @@ class Config:
     # Flask
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
     
-    # Database - Using SQLite for development
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///prok_app.db')
+    # Database - Using PostgreSQL for production, SQLite for development
+    DATABASE_URL = os.environ.get('DATABASE_URL')
+    if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
+        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+    
+    SQLALCHEMY_DATABASE_URI = DATABASE_URL or 'sqlite:///prok_app.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # JWT

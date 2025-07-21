@@ -139,16 +139,30 @@ export const postsApi = {
   },
 
   deletePost: async (postId: number): Promise<{ message: string }> => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
     const response = await fetch(`${API_URL}/api/posts/${postId}`, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Authorization': `Bearer ${token}`,
       },
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to delete post');
+      let errorMessage = 'Failed to delete post';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorData.message || errorMessage;
+      } catch (e) {
+        // If response is not JSON, use status text
+        errorMessage = response.statusText || errorMessage;
+      }
+      
+      // Add status code to error message for debugging
+      throw new Error(`${errorMessage} (Status: ${response.status})`);
     }
 
     return response.json();
