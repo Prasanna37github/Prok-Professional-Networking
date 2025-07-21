@@ -1,0 +1,11 @@
+Flask
+Flask-SQLAlchemy
+Flask-JWT-Extended
+Flask-Cors
+python-dotenv
+Pillow
+python-magic
+Flask-Limiter
+requests
+psycopg2-binary
+gunicorn 
