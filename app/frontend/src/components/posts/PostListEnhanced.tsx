@@ -1,16 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
 import { postsApi } from './api';
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
-import PostFilters, { type PostFilters as PostFiltersType } from './PostFilters';
+import PostFilters from './PostFilters';
 import LazyImage from '../common/LazyImage';
 import { useTheme } from '../../context/ThemeContext';
-import type { Post } from './api';
+import type { Post, PostsFilters } from './api';
 
 const PostListEnhanced: React.FC = () => {
   const { isDarkMode } = useTheme();
   const [posts, setPosts] = useState<Post[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,29 +17,13 @@ const PostListEnhanced: React.FC = () => {
   const [totalPosts, setTotalPosts] = useState(0);
 
   // Filters state
-  const [filters, setFilters] = useState<PostFiltersType>({
+  const [filters, setFilters] = useState<PostsFilters>({
     search: '',
-    category: '',
-    sortBy: 'created_at'
+    sort_by: 'newest'
   });
 
   // Like states
   const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
-  const [commentInputs, setCommentInputs] = useState<{ [key: number]: string }>({});
-  const [showShareModal, setShowShareModal] = useState<number | null>(null);
-
-  // Fetch categories on component mount
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const categoriesData = await postsApi.getCategories();
-        setCategories(categoriesData);
-      } catch (error) {
-        console.error('Error fetching categories:', error);
-      }
-    };
-    fetchCategories();
-  }, []);
 
   // Fetch posts with filters
   const fetchPosts = useCallback(async (page: number = 1, append: boolean = false) => {
@@ -83,7 +65,7 @@ const PostListEnhanced: React.FC = () => {
   }, [hasNext, loadingMore, currentPage, fetchPosts]);
 
   const loadMoreRef = useInfiniteScroll({
-    hasNextPage: hasNext,
+    hasNext: hasNext,
     isLoading: loadingMore,
     onLoadMore: loadMore
   });
@@ -110,21 +92,6 @@ const PostListEnhanced: React.FC = () => {
     } catch (error) {
       console.error('Error liking post:', error);
     }
-  };
-
-  const handleComment = (postId: number) => {
-    setCommentInputs(prev => ({
-      ...prev,
-      [postId]: prev[postId] || ''
-    }));
-  };
-
-  const handleShare = (postId: number) => {
-    setShowShareModal(postId);
-  };
-
-  const getShareLink = (postId: number) => {
-    return `${window.location.origin}/posts/${postId}`;
   };
 
   const formatDate = (dateString: string) => {
@@ -206,7 +173,9 @@ const PostListEnhanced: React.FC = () => {
         <PostFilters
           filters={filters}
           onFiltersChange={setFilters}
-          isLoading={loading}
+          onSearch={(search) => setFilters(prev => ({ ...prev, search }))}
+          searchValue={filters.search || ''}
+          onSearchChange={(value) => setFilters(prev => ({ ...prev, search: value }))}
         />
 
         {/* Posts List */}
@@ -286,7 +255,6 @@ const PostListEnhanced: React.FC = () => {
                   </button>
                   {post.allow_comments && (
                     <button 
-                      onClick={() => handleComment(post.id)}
                       className={`flex items-center space-x-2 transition-colors ${
                         isDarkMode ? 'text-gray-400 hover:text-blue-400' : 'text-gray-500 hover:text-blue-600'
                       }`}
@@ -298,7 +266,6 @@ const PostListEnhanced: React.FC = () => {
                     </button>
                   )}
                   <button 
-                    onClick={() => handleShare(post.id)}
                     className={`flex items-center space-x-2 transition-colors ${
                       isDarkMode ? 'text-gray-400 hover:text-blue-400' : 'text-gray-500 hover:text-blue-600'
                     }`}

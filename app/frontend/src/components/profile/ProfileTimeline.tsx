@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 const ProfileTimeline = ({ timeline }: { timeline: any[] }) => (
   <div className="p-4 bg-white rounded shadow mt-4">

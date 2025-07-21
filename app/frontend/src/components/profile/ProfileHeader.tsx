@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 const ProfileHeader = ({ user }: { user: any }) => {
   // Construct the proper image URL

@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 const ProfileBio = ({ bio }: { bio: string }) => (
   <div className="p-4 bg-white rounded shadow mt-4">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import ProfileLayout from '../components/profile/ProfileLayout';
 import ProfileEditForm from '../components/profile/ProfileEditForm';
 import { profileApi } from '../components/profile/api';
@@ -61,9 +61,7 @@ const ProfilePage: React.FC = () => {
 
   // Ensure all arrays exist and are arrays
   const safeSkills = Array.isArray(user.skills) ? user.skills : [];
-  const safeExperience = Array.isArray(user.experience) ? user.experience : [];
-  const safeEducation = Array.isArray(user.education) ? user.education : [];
-  const safeSocials = Array.isArray(user.socials) ? user.socials : [];
+
 
   return (
     <div className="text-black">

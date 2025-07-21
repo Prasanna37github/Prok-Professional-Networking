@@ -15,7 +15,7 @@ const UserPosts: React.FC<UserPostsProps> = ({ userId, isOwnProfile = false }) =
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deletingPost, setDeletingPost] = useState<number | null>(null);
-  const { user: currentUser } = useAuth();
+
 
   useEffect(() => {
     fetchUserPosts();

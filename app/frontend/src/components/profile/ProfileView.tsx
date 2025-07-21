@@ -115,7 +115,7 @@ const ProfileView: React.FC = () => {
                   />
                   <input
                     name="email"
-                    value={form.contact.email}
+                    value={form.contact?.email || ''}
                     onChange={e => setForm({ ...form, contact: { ...form.contact, email: e.target.value } })}
                     placeholder="Email"
                     className="w-full px-2 py-1 border rounded"
@@ -154,9 +154,24 @@ const ProfileView: React.FC = () => {
           ) : (
             <>
               <div className="bg-white rounded-lg shadow p-6"><ProfileBio bio={user.bio} /></div>
-              <div className="bg-white rounded-lg shadow p-6"><ProfileSkills skills={user.skills} /></div>
-              <div className="bg-white rounded-lg shadow p-6"><ProfileExperience experience={user.experience} /></div>
-              <div className="bg-white rounded-lg shadow p-6"><ProfileEducation education={user.education} /></div>
+              <div className="bg-white rounded-lg shadow p-6"><ProfileSkills skills={user.skills?.map(skill => ({ name: skill, level: 'Intermediate' })) || []} /></div>
+              <div className="bg-white rounded-lg shadow p-6"><ProfileExperience experience={user.experience?.map(exp => ({ 
+                id: 0, 
+                title: exp.role, 
+                company: exp.company, 
+                start_date: exp.duration, 
+                end_date: '', 
+                description: exp.description 
+              })) || []} /></div>
+              <div className="bg-white rounded-lg shadow p-6"><ProfileEducation education={user.education?.map(edu => ({ 
+                id: 0, 
+                school: edu.institution, 
+                degree: edu.degree, 
+                field: '', 
+                start_date: edu.duration, 
+                end_date: '', 
+                description: '' 
+              })) || []} /></div>
               <div className="bg-white rounded-lg shadow p-6"><UserPosts isOwnProfile={true} /></div>
               <div className="bg-white rounded-lg shadow p-6"><ProfileActivity activity={mockActivity} /></div>
               <div className="bg-white rounded-lg shadow p-6"><ProfileTimeline timeline={mockTimeline} /></div>
