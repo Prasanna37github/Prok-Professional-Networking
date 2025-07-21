@@ -1,5 +1,8 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+// Debug: Log the API URL being used
+console.log('API_URL:', API_URL);
+
 export const api = {
   // Auth endpoints
   login: async (credentials: { email: string; password: string }) => {

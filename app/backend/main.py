@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request
 from flask_cors import CORS
 from config import Config
 from dotenv import load_dotenv
@@ -17,10 +17,17 @@ app.config.from_object(Config)
 # Add CORS headers to all responses
 @app.after_request
 def after_request(response):
+    # Allow all origins
     response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With')
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
     response.headers.add('Access-Control-Allow-Credentials', 'true')
+    
+    # Handle preflight requests
+    if request.method == 'OPTIONS':
+        response.status_code = 200
+        return response
+    
     return response
 
 # Initialize extensions
@@ -61,6 +68,20 @@ def setup_database():
     with app.app_context():
         db.create_all()
         print("✅ Database tables created successfully!")
+
+# Health check endpoint
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """Health check endpoint"""
+    return {'status': 'healthy', 'message': 'Backend is running'}, 200
+
+# Test CORS endpoint
+@app.route('/api/test-cors', methods=['GET', 'POST', 'OPTIONS'])
+def test_cors():
+    """Test CORS endpoint"""
+    if request.method == 'OPTIONS':
+        return {'message': 'CORS preflight successful'}, 200
+    return {'message': 'CORS test successful', 'method': request.method}, 200
 
 # Create a function to initialize the app
 def create_app():
