@@ -14,8 +14,22 @@ load_dotenv()
 app = Flask(__name__)
 app.config.from_object(Config)
 
+# Add CORS headers to all responses
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    return response
+
 # Initialize extensions
-CORS(app)
+CORS(app, 
+     resources={r"/api/*": {"origins": "*"}},
+     supports_credentials=True,
+     allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+)
 db.init_app(app)
 jwt = JWTManager(app)
 
@@ -30,11 +44,17 @@ from api.auth import auth_bp
 from api.profile import profile_bp
 from api.posts import posts_bp
 from api.comments import comments_bp
+from api.feed import feed_bp
+from api.jobs import jobs_bp
+from api.messaging import messaging_bp
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(profile_bp)
 app.register_blueprint(posts_bp)
 app.register_blueprint(comments_bp)
+app.register_blueprint(feed_bp)
+app.register_blueprint(jobs_bp)
+app.register_blueprint(messaging_bp)
 
 def setup_database():
     """Setup database tables"""
