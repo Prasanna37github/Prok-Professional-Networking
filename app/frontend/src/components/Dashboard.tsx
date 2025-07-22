@@ -182,7 +182,8 @@ const Dashboard: React.FC = () => {
   const renderMedia = (post: Post) => {
     if (!post.media_url) return null;
 
-    const mediaUrl = `http://localhost:5000${post.media_url}`;
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const mediaUrl = `${API_URL}${post.media_url}`;
 
     switch (post.media_type) {
       case 'image':
@@ -384,7 +385,7 @@ const Dashboard: React.FC = () => {
               <div className="relative">
                 {user?.avatar ? (
                   <img 
-                    src={`http://localhost:5000/api/profile/image/${user.avatar}`}
+                    src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/profile/image/${user.avatar}`}
                     alt={user?.name || user?.username}
                     className="w-16 h-16 rounded-full object-cover border-4 border-white shadow-xl ring-4 ring-purple-200"
                   />
@@ -576,7 +577,7 @@ const Dashboard: React.FC = () => {
                       {/* User Profile Image */}
                       {post.user?.avatar ? (
                         <img 
-                          src={`http://localhost:5000/api/profile/image/${post.user.avatar}`}
+                          src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/profile/image/${post.user.avatar}`}
                           alt={post.user?.name || post.user?.username}
                           className="w-10 h-10 rounded-full object-cover border-2 border-purple-200 shadow-md"
                         />
@@ -726,7 +727,7 @@ const Dashboard: React.FC = () => {
                               <div className="flex items-start space-x-2">
                                 {comment.user.avatar ? (
                                   <img 
-                                    src={`http://localhost:5000/api/profile/image/${comment.user.avatar}`}
+                                    src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/profile/image/${comment.user.avatar}`}
                                     alt={comment.user.name}
                                     className="w-8 h-8 rounded-full object-cover border border-purple-200"
                                   />
