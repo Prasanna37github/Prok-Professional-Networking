@@ -14,14 +14,23 @@ load_dotenv()
 app = Flask(__name__)
 app.config.from_object(Config)
 
+# Enhanced CORS configuration for production
+ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', '*').split(',') if os.getenv('ALLOWED_ORIGINS') else ['*']
+
 # Add CORS headers to all responses
 @app.after_request
 def after_request(response):
-    # Allow all origins
-    response.headers.add('Access-Control-Allow-Origin', '*')
+    # Allow all origins in development, specific origins in production
+    origin = request.headers.get('Origin')
+    if origin and (origin in ALLOWED_ORIGINS or '*' in ALLOWED_ORIGINS):
+        response.headers.add('Access-Control-Allow-Origin', origin)
+    elif '*' in ALLOWED_ORIGINS:
+        response.headers.add('Access-Control-Allow-Origin', '*')
+    
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With')
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
     response.headers.add('Access-Control-Allow-Credentials', 'true')
+    response.headers.add('Access-Control-Max-Age', '3600')
     
     # Handle preflight requests
     if request.method == 'OPTIONS':
@@ -30,12 +39,14 @@ def after_request(response):
     
     return response
 
-# Initialize extensions
+# Initialize extensions with enhanced CORS
 CORS(app, 
-     resources={r"/api/*": {"origins": "*"}},
+     origins=ALLOWED_ORIGINS,
+     resources={r"/api/*": {"origins": ALLOWED_ORIGINS}},
      supports_credentials=True,
      allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
-     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+     max_age=3600
 )
 db.init_app(app)
 jwt = JWTManager(app)
@@ -83,10 +94,11 @@ def test_cors():
         return {'message': 'CORS preflight successful'}, 200
     return {'message': 'CORS test successful', 'method': request.method}, 200
 
-# Create a function to initialize the app
-def create_app():
-    """Application factory function"""
-    return app
+# Root endpoint
+@app.route('/', methods=['GET'])
+def root():
+    """Root endpoint"""
+    return {'message': 'Prok Backend API', 'status': 'running'}, 200
 
 if __name__ == '__main__':
     # Setup database tables
