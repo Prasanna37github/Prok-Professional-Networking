@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { profileApi } from './api';
 import UserPosts from './UserPosts';
 
 const ProfileLayout: React.FC = () => {
-  const { user: authUser } = useAuth();
   const { isDarkMode } = useTheme();
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
