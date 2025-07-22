@@ -23,6 +23,10 @@ export const router = createBrowserRouter([
     element: <Navigate to="/login" replace />,
   },
   {
+    path: '/home',
+    element: <Navigate to="/dashboard" replace />,
+  },
+  {
     path: '/login',
     element: <Login />,
   },
@@ -62,7 +66,6 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
-
   {
     path: '/jobs',
     element: (
@@ -78,5 +81,9 @@ export const router = createBrowserRouter([
         <MessageList />
       </ProtectedRoute>
     ),
+  },
+  {
+    path: '*',
+    element: <Navigate to="/dashboard" replace />,
   },
 ]);

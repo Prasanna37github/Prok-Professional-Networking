@@ -1,4 +1,4 @@
-
+import React from 'react';
 
 const ProfileHeader = ({ user }: { user: any }) => {
   // Construct the proper image URL
@@ -10,8 +10,9 @@ const ProfileHeader = ({ user }: { user: any }) => {
     if (user.avatar.startsWith('http')) {
       return user.avatar;
     }
-    // Otherwise, construct the backend URL
-    return `http://localhost:5000/api/profile/image/${user.avatar}`;
+    // Otherwise, construct the backend URL using environment variable
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    return `${API_URL}/api/profile/image/${user.avatar}`;
   };
 
   return (

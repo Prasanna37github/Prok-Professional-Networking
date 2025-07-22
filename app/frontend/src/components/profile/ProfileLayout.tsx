@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { profileApi } from './api';
@@ -7,6 +8,7 @@ import UserPosts from './UserPosts';
 const ProfileLayout: React.FC = () => {
   const { user: authUser } = useAuth();
   const { isDarkMode } = useTheme();
+  const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +53,7 @@ const ProfileLayout: React.FC = () => {
       if (result.success) {
         // Clear local storage and redirect to login
         localStorage.clear();
-        window.location.href = '/login';
+        navigate('/login');
       } else {
         alert('Failed to delete profile: ' + (result.message || 'Unknown error'));
       }
@@ -68,54 +70,65 @@ const ProfileLayout: React.FC = () => {
     { id: 'about', label: 'About', icon: '👤' },
   ] as const;
 
+  if (loading) {
+    return (
+      <div className={`min-h-screen ${isDarkMode ? 'bg-slate-900' : 'bg-gray-50'}`}>
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={`min-h-screen ${isDarkMode ? 'bg-slate-900' : 'bg-gray-50'}`}>
+        <div className="text-center py-12">
+          <div className={`text-red-600 text-lg ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>{error}</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-br from-slate-900 to-purple-900' : 'bg-gradient-to-br from-gray-50 to-gray-100'}`}>
+    <div className={`min-h-screen ${isDarkMode ? 'bg-slate-900' : 'bg-gray-50'}`}>
       {/* Profile Header */}
-      <div className={`${isDarkMode ? 'bg-slate-800 shadow-lg border-slate-700' : 'bg-white shadow-sm border-b'}`}>
-        <div className="max-w-6xl mx-auto px-4 py-6">
-          <div className="flex items-center space-x-6">
-            <div className="relative">
-              {user?.avatar ? (
+      <div className={`${isDarkMode ? 'bg-slate-800' : 'bg-white'} border-b ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`}>
+        <div className="max-w-6xl mx-auto px-4 py-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
+            <div className="flex items-center space-x-6 mb-4 md:mb-0">
+              <div className="relative">
                 <img
-                  src={`http://localhost:5000/api/profile/image/${user.avatar}`}
+                  src={user?.avatar ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/profile/image/${user.avatar}` : '/default-avatar.png'}
                   alt="Profile"
                   className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
                   onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                    e.currentTarget.src = '/default-avatar.png';
                   }}
                 />
-              ) : null}
-              <div
-                className={`w-24 h-24 rounded-full flex items-center justify-center text-white font-bold text-3xl border-4 border-white shadow-lg ${
-                  user?.avatar ? 'hidden' : ''
-                }`}
-                style={{
-                  backgroundColor: `hsl(${Math.abs((user?.name || authUser?.name || 'U').charCodeAt(0)) % 360}, 70%, 50%)`
-                }}
-              >
-                {(user?.name || authUser?.name || 'U').charAt(0).toUpperCase()}
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-4 border-white rounded-full"></div>
               </div>
-              <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 rounded-full border-4 border-white"></div>
-            </div>
-            <div className="flex-1">
-              <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                {user?.name || authUser?.name || 'Your Profile'}
-              </h1>
-              <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mt-1`}>{user?.title || 'Professional Network Member'}</p>
-              <div className="flex items-center space-x-4 mt-3">
-                {user?.location && (
-                  <>
-                    <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>📍 {user.location}</span>
-                    <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>•</span>
-                  </>
-                )}
-                <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Joined 2024</span>
+              <div>
+                <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  {user?.name || 'No Name'}
+                </h1>
+                <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  {user?.title || 'No Title'}
+                </p>
+                <div className={`flex items-center space-x-2 mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <span className="text-sm">{user?.location || 'No Location'}</span>
+                  {user?.location && (
+                    <>
+                      <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>•</span>
+                    </>
+                  )}
+                  <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Joined 2024</span>
+                </div>
               </div>
             </div>
             <div className="flex space-x-3">
               <button 
-                onClick={() => window.location.href = '/dashboard'}
+                onClick={() => navigate('/dashboard')}
                 className={`p-3 border rounded-lg transition-colors ${
                   isDarkMode 
                     ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
@@ -128,7 +141,7 @@ const ProfileLayout: React.FC = () => {
                 </svg>
               </button>
               <button 
-                onClick={() => window.location.href = '/profile?edit=1'}
+                onClick={() => navigate('/profile?edit=1')}
                 className="p-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                 title="Edit Profile"
               >
@@ -208,12 +221,12 @@ const ProfileLayout: React.FC = () => {
                       {user?.bio || 'No bio available yet.'}
                     </p>
                   </div>
-                  
-                  {user?.skills && Array.isArray(user.skills) && user.skills.length > 0 && (
-                    <div>
-                      <h3 className={`text-lg font-semibold mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Skills</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {user.skills.map((skill: any, index: number) => (
+
+                  <div>
+                    <h3 className={`text-lg font-semibold mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Skills</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {user?.skills && user.skills.length > 0 ? (
+                        user.skills.map((skill: any, index: number) => (
                           <span
                             key={index}
                             className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -222,46 +235,64 @@ const ProfileLayout: React.FC = () => {
                                 : 'bg-purple-100 text-purple-800'
                             }`}
                           >
-                            {typeof skill === 'string' ? skill : skill.name || skill.skill || 'Unknown Skill'}
+                            {skill.name || skill}
                           </span>
-                        ))}
-                      </div>
+                        ))
+                      ) : (
+                        <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>No skills added yet.</p>
+                      )}
                     </div>
-                  )}
+                  </div>
 
-                  {user?.experience && Array.isArray(user.experience) && user.experience.length > 0 && (
-                    <div>
-                      <h3 className={`text-lg font-semibold mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Experience</h3>
-                      <div className="space-y-4">
-                        {user.experience.map((exp: any, index: number) => (
-                          <div key={index} className="border-l-4 border-purple-600 pl-4">
-                            <h4 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{exp.role || exp.title || 'Position'}</h4>
-                            <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                              {exp.company || 'Company'} • {exp.duration || exp.start_date || 'Duration'}
+                  <div>
+                    <h3 className={`text-lg font-semibold mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Experience</h3>
+                    <div className="space-y-4">
+                      {user?.experience && user.experience.length > 0 ? (
+                        user.experience.map((exp: any, index: number) => (
+                          <div key={index} className={`border-l-4 border-purple-500 pl-4 ${isDarkMode ? 'border-purple-400' : 'border-purple-500'}`}>
+                            <h4 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                              {exp.title || exp.role}
+                            </h4>
+                            <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                              {exp.company} • {exp.start_date || exp.duration}
                             </p>
-                            <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'} mt-1`}>{exp.description || 'No description available'}</p>
+                            {exp.description && (
+                              <p className={`mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-700'}`}>
+                                {exp.description}
+                              </p>
+                            )}
                           </div>
-                        ))}
-                      </div>
+                        ))
+                      ) : (
+                        <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>No experience added yet.</p>
+                      )}
                     </div>
-                  )}
+                  </div>
 
-                  {user?.education && Array.isArray(user.education) && user.education.length > 0 && (
-                    <div>
-                      <h3 className={`text-lg font-semibold mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Education</h3>
-                      <div className="space-y-4">
-                        {user.education.map((edu: any, index: number) => (
-                          <div key={index} className="border-l-4 border-purple-600 pl-4">
-                            <h4 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{edu.degree || edu.field || 'Degree'}</h4>
-                            <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                              {edu.school || edu.institution || 'Institution'} • {edu.duration || edu.start_date || 'Duration'}
+                  <div>
+                    <h3 className={`text-lg font-semibold mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Education</h3>
+                    <div className="space-y-4">
+                      {user?.education && user.education.length > 0 ? (
+                        user.education.map((edu: any, index: number) => (
+                          <div key={index} className={`border-l-4 border-green-500 pl-4 ${isDarkMode ? 'border-green-400' : 'border-green-500'}`}>
+                            <h4 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                              {edu.degree || edu.school}
+                            </h4>
+                            <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                              {edu.school || edu.institution} • {edu.start_date || edu.duration}
                             </p>
-                            <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'} mt-1`}>{edu.description || 'No description available'}</p>
+                            {edu.description && (
+                              <p className={`mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-700'}`}>
+                                {edu.description}
+                              </p>
+                            )}
                           </div>
-                        ))}
-                      </div>
+                        ))
+                      ) : (
+                        <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>No education added yet.</p>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
             )}
