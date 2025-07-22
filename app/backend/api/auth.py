@@ -7,14 +7,19 @@ from models.user_model import User
 
 auth_bp = Blueprint('auth', __name__)
 
-@auth_bp.route('/api/signup', methods=['POST'])
+@auth_bp.route('/api/signup', methods=['POST', 'OPTIONS'])
 def signup():
+    # Handle preflight OPTIONS request
+    if request.method == 'OPTIONS':
+        return jsonify({'message': 'OK'}), 200
+    
     data = request.get_json()
     username = data.get('username')
     email = data.get('email')
     password = data.get('password')
     if not username or not email or not password:
         return jsonify({'message': 'Missing fields'}), 400
+    
     # Add default profile fields
     user = User(
         username=username,
@@ -33,13 +38,24 @@ def signup():
     try:
         db.session.add(user)
         db.session.commit()
-        return jsonify({'message': 'User created successfully'}), 201
+        
+        # Create token for the new user (like login)
+        token = create_access_token(identity=str(user.id))
+        return jsonify({
+            'message': 'User created successfully',
+            'token': token,
+            'user': {'id': user.id, 'username': user.username, 'email': user.email}
+        }), 201
     except IntegrityError:
         db.session.rollback()
         return jsonify({'message': 'Username or email already exists'}), 400
 
-@auth_bp.route('/api/login', methods=['POST'])
+@auth_bp.route('/api/login', methods=['POST', 'OPTIONS'])
 def login():
+    # Handle preflight OPTIONS request
+    if request.method == 'OPTIONS':
+        return jsonify({'message': 'OK'}), 200
+    
     data = request.get_json()
     username_or_email = data.get('username') or data.get('email')
     password = data.get('password')

@@ -14,40 +14,14 @@ load_dotenv()
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# Enhanced CORS configuration for production
-ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', '*').split(',') if os.getenv('ALLOWED_ORIGINS') else ['*']
-
-# Add CORS headers to all responses
-@app.after_request
-def after_request(response):
-    # Allow all origins in development, specific origins in production
-    origin = request.headers.get('Origin')
-    if origin and (origin in ALLOWED_ORIGINS or '*' in ALLOWED_ORIGINS):
-        response.headers.add('Access-Control-Allow-Origin', origin)
-    elif '*' in ALLOWED_ORIGINS:
-        response.headers.add('Access-Control-Allow-Origin', '*')
-    
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-    response.headers.add('Access-Control-Allow-Credentials', 'true')
-    response.headers.add('Access-Control-Max-Age', '3600')
-    
-    # Handle preflight requests
-    if request.method == 'OPTIONS':
-        response.status_code = 200
-        return response
-    
-    return response
-
-# Initialize extensions with enhanced CORS
+# Simple and effective CORS configuration
 CORS(app, 
-     origins=ALLOWED_ORIGINS,
-     resources={r"/api/*": {"origins": ALLOWED_ORIGINS}},
-     supports_credentials=True,
+     origins="*",  # Allow all origins
+     supports_credentials=False,  # Set to False for simplicity
      allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
-     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-     max_age=3600
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 )
+
 db.init_app(app)
 jwt = JWTManager(app)
 
